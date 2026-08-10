@@ -1,0 +1,37 @@
+{
+  "name": "com.chanya.ani-cursor",
+  "displayName": "ANI Cursor Tool",
+  "version": "1.0.2",
+  "unity": "2022.3",
+  "description": "Converts Windows ANI cursor sets into animated 3D cursor prefabs for VRChat avatars, with Modular Avatar menu integration.",
+  "author": {
+    "name": "Chanya",
+    "email": "63221603+ChanyaVRC@users.noreply.github.com",
+    "url": "https://github.com/ChanyaVRC"
+  },
+  "documentationUrl": "https://github.com/ChanyaVRC/AniCursor#readme",
+  "changelogUrl": "https://github.com/ChanyaVRC/AniCursor/blob/main/Packages/com.chanya.ani-cursor/CHANGELOG.md",
+  "license": "MIT",
+  "type": "tool",
+  "keywords": [
+    "vrchat",
+    "modular-avatar",
+    "cursor",
+    "ani",
+    "blender"
+  ],
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  },
+  "vpmDependencies": {
+    "com.vrchat.avatars": "3.10.x",
+    "nadena.dev.modular-avatar": ">=1.18.1 <2.0.0-a"
+  },
+  "samples": [
+    {
+      "displayName": "Preset Example",
+      "description": "A generic 32x32 ANI cursor preset that can be copied and edited for named cursor mappings.",
+      "path": "Samples~/Preset Example"
+    }
+  ]
+}

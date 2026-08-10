@@ -1,0 +1,15 @@
+* text=auto
+
+*.asmdef text eol=lf
+*.asset text eol=lf
+*.cs text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.meta text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+*.dll binary
+*.ico binary
+*.png binary
