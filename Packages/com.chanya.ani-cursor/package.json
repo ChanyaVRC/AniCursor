@@ -1,7 +1,7 @@
 {
   "name": "com.chanya.ani-cursor",
   "displayName": "ANI Cursor Tool",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "unity": "2022.3",
   "description": "Converts Windows ANI cursor sets into animated 3D cursor prefabs for VRChat avatars, with Modular Avatar menu integration.",
   "author": {

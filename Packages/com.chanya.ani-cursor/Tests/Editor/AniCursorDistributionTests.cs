@@ -28,7 +28,7 @@ namespace Chanya.AniCursor.Tests.Editor
 
             Assert.That(manifest.name, Is.EqualTo(PackageName));
             Assert.That(manifest.displayName, Is.Not.Null.And.Not.Empty);
-            Assert.That(manifest.version, Is.EqualTo("1.0.2"));
+            Assert.That(manifest.version, Is.EqualTo("2.0.0"));
             Assert.That(manifest.description, Is.Not.Null.And.Not.Empty);
             Assert.That(manifest.unity, Does.StartWith("2022.3"));
         }
@@ -76,6 +76,65 @@ namespace Chanya.AniCursor.Tests.Editor
                 Is.Empty,
                 "Distributable files contain local-machine or project-specific paths:\n" +
                 string.Join("\n", violations));
+        }
+
+        [Test]
+        public void GeneratorSources_DoNotContainRemovedMigrationContracts()
+        {
+            var packageRoot = LocatePackageRoot();
+            var forbidden = new[]
+            {
+                "RightHandAnchor",
+                "Position_Adjust",
+                "CursorObjects",
+                "legacy_renderer_path",
+                "BuildFromRequestFile",
+                "unity_build_request.json"
+            };
+            var violations = new List<string>();
+
+            foreach (var path in Directory.EnumerateFiles(packageRoot.FullName, "*", SearchOption.AllDirectories))
+            {
+                var extension = Path.GetExtension(path);
+                if (!string.Equals(extension, ".cs", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(extension, ".py", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var relativePath = NormalizePath(Path.GetRelativePath(packageRoot.FullName, path));
+                if (relativePath.StartsWith("tests/", StringComparison.OrdinalIgnoreCase)) continue;
+                var content = File.ReadAllText(path);
+                foreach (var token in forbidden.Where(content.Contains))
+                {
+                    violations.Add(relativePath + " contains " + token);
+                }
+            }
+
+            Assert.That(violations, Is.Empty,
+                "Generator sources contain removed migration contracts:\n" + string.Join("\n", violations));
+        }
+
+        [Test]
+        public void PipelineStages_RequireCanonicalManifestSchema3()
+        {
+            var prepare = ReadPackageFile("Tools~/Pipeline/prepare_ani_cursor.py");
+            var blender = ReadPackageFile("Tools~/Pipeline/build_ani_cursor_blender.py");
+            var window = ReadPackageFile("Editor/AniCursorPipelineWindow.cs");
+            var builder = ReadPackageFile("Editor/AniCursorUnityBuilder.cs");
+
+            Assert.That(prepare, Does.Contain("SCHEMA_VERSION = 3"));
+            Assert.That(blender, Does.Contain("manifest.get(\"schema_version\") != 3"));
+            Assert.That(window, Does.Contain("schema_version 3 is supported"));
+            Assert.That(builder, Does.Contain("schema_version 3 is supported"));
+        }
+
+        private static string ReadPackageFile(string relativePath)
+        {
+            var path = Path.Combine(LocatePackageRoot().FullName,
+                relativePath.Replace('/', Path.DirectorySeparatorChar));
+            Assert.That(File.Exists(path), Is.True, "Missing package file: " + relativePath);
+            return File.ReadAllText(path);
         }
 
         private static string ReadManifestText()

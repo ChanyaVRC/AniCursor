@@ -2,20 +2,14 @@
   "frame_size": 32,
   "atlas_size": 512,
   "alpha_threshold": 128,
-  "parameter_name": "AniCursor_Select",
-  "atlas_st_property": "material._MainTex_ST",
   "geometry": {
     "mode": "global_alpha_signature_closed_plate",
-    "object_name": "CursorDisplay",
-    "renderer_path": "CursorDisplay",
     "world_size_m": 0.12,
     "thickness_m": 0.004
   },
   "cursors": {
     "Normal.ani": {
       "asset_name": "AniCursor_Normal",
-      "object_name": "Cursor_Normal",
-      "renderer_path": "CursorDisplay",
       "menu_label": "Normal",
       "menu_order": 0,
       "parameter_value": 0,
@@ -23,8 +17,6 @@
     },
     "Link.ani": {
       "asset_name": "AniCursor_Link",
-      "object_name": "Cursor_Link",
-      "renderer_path": "CursorDisplay",
       "menu_label": "Link",
       "menu_order": 1,
       "parameter_value": 1

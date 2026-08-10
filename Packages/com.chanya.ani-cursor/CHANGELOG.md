@@ -2,6 +2,20 @@
 
 All notable changes to this package are documented in this file.
 
+## [2.0.0] - 2026-08-11
+
+### Changed
+
+- Modular Avatar is now the single required prefab integration path.
+- Generation now uses manifest schema 3 and one direct `CursorDisplay` with an identity transform.
+- Material filenames no longer use an `M_` prefix.
+- Releases now publish only the VPM ZIP and package manifest; UnityPackage output was removed.
+
+### Removed
+
+- Removed old prefab hierarchy migration, schema aliases, and the intermediate Unity build-request API.
+- Outputs created by earlier versions must be regenerated from their source `.ani` files.
+
 ## [1.0.2] - 2026-08-10
 
 ### Changed

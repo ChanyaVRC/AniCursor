@@ -28,10 +28,8 @@ from pathlib import Path
 from typing import Any
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 JIFFIES_PER_SECOND = 60
-DEFAULT_DISPLAY_OBJECT_NAME = "CursorDisplay"
-DEFAULT_DISPLAY_RENDERER_PATH = "CursorDisplay"
 
 
 def _bootstrap_ani_extract() -> None:
@@ -212,23 +210,12 @@ def _preset_binding(
     asset_name = _safe_asset_name(
         str(selected.get("asset_name", source.stem)), source_hash
     )
-    object_name = str(selected.get("object_name", asset_name))
-    renderer_path = str(
-        selected.get(
-            "renderer_path",
-            DEFAULT_DISPLAY_RENDERER_PATH,
-        )
-    )
     return {
         "asset_name": asset_name,
         "enabled_by_default": bool(selected.get("enabled_by_default", False)),
-        "material_slot": int(selected.get("material_slot", 0)),
         "menu_label": str(selected.get("menu_label", source.stem)),
         "menu_order": int(selected.get("menu_order", fallback_value)),
-        "object_name": object_name,
-        "parameter_name": selected.get("parameter_name", preset.get("parameter_name")),
         "parameter_value": int(selected.get("parameter_value", fallback_value)),
-        "renderer_path": renderer_path,
     }
 
 
@@ -320,27 +307,8 @@ def prepare(
     geometry_preset = preset.get("geometry", {})
     if not isinstance(geometry_preset, dict):
         raise ValueError("preset.geometry must be an object when present")
-    display_object_name = str(
-        geometry_preset.get(
-            "object_name", preset.get("display_object_name", DEFAULT_DISPLAY_OBJECT_NAME)
-        )
-    )
-    display_renderer_path = str(
-        geometry_preset.get(
-            "renderer_path",
-            preset.get("display_renderer_path", DEFAULT_DISPLAY_RENDERER_PATH),
-        )
-    )
-    world_size_m = float(
-        geometry_preset.get("world_size_m", preset.get("world_size_m", 0.12))
-    )
-    thickness_m = float(
-        geometry_preset.get("thickness_m", preset.get("thickness_m", 0.004))
-    )
-    if not display_object_name.strip():
-        raise ValueError("Global display object name must not be empty.")
-    if not display_renderer_path.strip():
-        raise ValueError("Global display renderer path must not be empty.")
+    world_size_m = float(geometry_preset.get("world_size_m", 0.12))
+    thickness_m = float(geometry_preset.get("thickness_m", 0.004))
     if world_size_m <= 0.0 or thickness_m <= 0.0:
         raise ValueError("Geometry world size and thickness must be positive.")
 
@@ -350,11 +318,6 @@ def prepare(
         ani = parse_ani(source_bytes)
         literal_sequence, literal_rates = _literal_playback_chunks(source_bytes)
         binding = _preset_binding(preset, source, source_hash, cursor_index)
-        # Keep the logical per-cursor object name for menu/state matching, but
-        # bind every animation track to the one generated CursorDisplay renderer.
-        # The legacy path lets the Unity migration remove the old 14 renderers.
-        binding["legacy_renderer_path"] = binding["renderer_path"]
-        binding["renderer_path"] = display_renderer_path
         asset_name = binding["asset_name"]
         folded_asset_name = asset_name.casefold()
         if folded_asset_name in seen_asset_names:
@@ -536,7 +499,6 @@ def prepare(
     atlas.save(output_directory / "atlas.png", "PNG", optimize=False)
     outputs = {
         "atlas": "atlas.png",
-        "build_request": "unity_build_request.json",
         "frames_dir": "frames",
         "icons_dir": "icons",
         "manifest": "manifest.json",
@@ -585,9 +547,7 @@ def prepare(
             "default_frame_id": default_frame_id,
             "default_main_tex_st": default_main_tex_st,
             "mode": "global_alpha_signature_closed_plate",
-            "object_name": display_object_name,
             "pixel_gap_m": 0.0,
-            "renderer_path": display_renderer_path,
             "signature_basis_frame_ids": ordered_frame_ids,
             "thickness_m": thickness_m,
             "uv_mode": "normalized_frame",
@@ -612,22 +572,6 @@ def prepare(
         },
     }
     _write_json(output_directory / "manifest.json", manifest)
-    build_request = {
-        "atlas": outputs["atlas"],
-        "frames_dir": outputs["frames_dir"],
-        "icons_dir": outputs["icons_dir"],
-        "manifest": outputs["manifest"],
-        "masks_dir": outputs["masks_dir"],
-        "schema_version": SCHEMA_VERSION,
-        "unity": {
-            "atlas_st_property": str(
-                preset.get("atlas_st_property", "material._MainTex_ST")
-            ),
-            "clip_frame_rate": JIFFIES_PER_SECOND,
-            "loop_time": True,
-        },
-    }
-    _write_json(output_directory / "unity_build_request.json", build_request)
     return manifest
 
 

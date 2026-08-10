@@ -44,6 +44,10 @@ def main() -> None:
     ):
         require((ROOT / relative).is_file(), f"Missing {relative}")
 
+    release_workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    require("unitypackage" not in release_workflow.lower(),
+            "Release workflow must remain VPM-only; UnityPackage output is not supported")
+
     violations: list[str] = []
     for path in PACKAGE.rglob("*"):
         if not path.is_file() or path.suffix.lower() not in TEXT_SUFFIXES:
@@ -59,6 +63,29 @@ def main() -> None:
 
     for script in (PACKAGE / "Tools~" / "Pipeline").glob("*.py"):
         compile(script.read_text(encoding="utf-8"), str(script), "exec")
+
+    prepare = (PACKAGE / "Tools~" / "Pipeline" / "prepare_ani_cursor.py").read_text(encoding="utf-8")
+    blender = (PACKAGE / "Tools~" / "Pipeline" / "build_ani_cursor_blender.py").read_text(encoding="utf-8")
+    window = (PACKAGE / "Editor" / "AniCursorPipelineWindow.cs").read_text(encoding="utf-8")
+    builder = (PACKAGE / "Editor" / "AniCursorUnityBuilder.cs").read_text(encoding="utf-8")
+    require("SCHEMA_VERSION = 3" in prepare, "Prepare stage must emit manifest schema 3")
+    require('manifest.get("schema_version") != 3' in blender,
+            "Blender stage must require manifest schema 3")
+    require("schema_version 3 is supported" in window and
+            "schema_version 3 is supported" in builder,
+            "Unity stages must require manifest schema 3")
+
+    generator_sources = prepare + blender + window + builder
+    removed_contracts = (
+        "RightHandAnchor",
+        "Position_Adjust",
+        "CursorObjects",
+        "legacy_renderer_path",
+        "BuildFromRequestFile",
+        "unity_build_request.json",
+    )
+    require(not any(token in generator_sources for token in removed_contracts),
+            "Removed migration contract remains in generator sources")
 
     print(f"Validated {PACKAGE_NAME}@{manifest['version']}")
 

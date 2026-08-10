@@ -25,7 +25,7 @@ VCC の `Settings > Packages > Add Repository` に上記URLを貼り付けても
 ## リポジトリ構成
 
 - `Packages/com.chanya.ani-cursor`: 配布されるVPMパッケージ
-- `.github/workflows/release.yml`: Release ZIPとUnityPackageを生成
+- `.github/workflows/release.yml`: VPM用のRelease ZIPを生成
 - `.github/workflows/build-listing.yml`: GitHub PagesへVPM listingを公開
 - `Website`: Add to VCCページのテンプレート
 

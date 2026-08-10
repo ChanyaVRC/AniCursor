@@ -16,6 +16,7 @@ VCC または ALCOM に `https://chanyavrc.github.io/AniCursor/index.json` を�
 - Modular Avatar 1.18.1 以上、2.0.0 未満
 
 依存する Unity/VPM パッケージは VPM のインストール時に解決されます。
+Modular Avatar は必須で、MA を使わない生成経路はありません。
 
 ## 初回のみ必要な準備
 
@@ -60,6 +61,10 @@ FBX、Material、アニメーション一式、および `*_MA.prefab` が作成
 プリセットは任意です。名前、メニュー順、パラメーター値を固定したい場合は、Package Manager の Samples から `Preset Example` をインポートし、`AniCursorPreset.json` の `.ani` ファイル名と表示名を編集して指定します。
 
 プリセットを指定しない場合は、フォルダー内の `.ani` から設定が自動生成されます。
+
+## 旧バージョンから更新する
+
+旧形式の prefab や manifest は変換しません。元の `.ani` フォルダーを指定し、最新版で生成し直してください。
 
 ## 生成仕様
 

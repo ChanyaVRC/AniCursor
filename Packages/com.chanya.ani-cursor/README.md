@@ -2,6 +2,8 @@
 
 Windows の `.ani` カーソル一式から、VRChat / Modular Avatar 対応の立体アニメーションカーソルを生成する VPM パッケージです。
 
+Modular Avatar は必須です。生成物は現行形式のみを対象とし、旧バージョンの prefab は移行せず、元の `.ani` から再生成します。
+
 ## インストール
 
 VCC または ALCOM に次のVPM listingを登録し、`ANI Cursor Tool` をプロジェクトへ追加してください。

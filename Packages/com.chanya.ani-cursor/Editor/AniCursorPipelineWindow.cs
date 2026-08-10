@@ -32,11 +32,6 @@ public sealed class AniCursorPipelineWindow : EditorWindow
     private const string DefaultOutputRoot = DefaultOutputBase + "/AniCursor";
     private const string PrepareScriptRelative = "Tools~/Pipeline/prepare_ani_cursor.py";
     private const string BlenderScriptRelative = "Tools~/Pipeline/build_ani_cursor_blender.py";
-    private const string LegacyCursorObjectsPath =
-        "RightHandAnchor/Position_Adjust/CursorObjects";
-    private const string LegacyCursorDisplayPath =
-        LegacyCursorObjectsPath + "/CursorDisplay";
-    private const string CursorDisplayPath = "CursorDisplay";
     private const string CursorDisplayName = "CursorDisplay";
 
     [SerializeField] private string _sourceFolder = "";
@@ -64,7 +59,7 @@ public sealed class AniCursorPipelineWindow : EditorWindow
     [SerializeField] private string _atlasAssetPath =
         DefaultOutputRoot + "/Textures/AniCursorAtlas.png";
     [SerializeField] private string _materialAssetPath =
-        DefaultOutputRoot + "/M_AniCursor.mat";
+        DefaultOutputRoot + "/AniCursor.mat";
     [SerializeField] private string _controllerAssetPath =
         DefaultOutputRoot + "/Animations/AniCursor_Animation.controller";
     [SerializeField] private string _clipsAssetFolder =
@@ -82,9 +77,6 @@ public sealed class AniCursorPipelineWindow : EditorWindow
     private sealed class CursorDefinition
     {
         public string AssetName;
-        public string ObjectName;
-        public string RendererPath;
-        public string ClipAssetPath;
         public string Label;
         public string IconFile;
         public int MenuOrder;
@@ -535,7 +527,7 @@ public sealed class AniCursorPipelineWindow : EditorWindow
         _prefabAssetPath = root + "/" + stem + "_MA.prefab";
         _fbxAssetPath = root + "/" + stem + "Meshes.fbx";
         _atlasAssetPath = root + "/Textures/" + stem + "Atlas.png";
-        _materialAssetPath = root + "/M_" + stem + ".mat";
+        _materialAssetPath = root + "/" + stem + ".mat";
         _controllerAssetPath = root + "/Animations/" + stem + "_Animation.controller";
         _clipsAssetFolder = root + "/Animations/" + stem + "_Clips";
         _iconsAssetFolder = root + "/Textures/" + stem + "_Icons";
@@ -592,14 +584,10 @@ public sealed class AniCursorPipelineWindow : EditorWindow
 
         var manifestFile = Path.Combine(preparedRoot, "manifest.json");
         var manifest = JObject.Parse(File.ReadAllText(manifestFile));
-        manifest["world_size_m"] = _worldSize;
-        manifest["thickness_m"] = _thickness;
-        var geometry = manifest["geometry"] as JObject;
-        if (geometry == null)
-        {
-            geometry = new JObject();
-            manifest["geometry"] = geometry;
-        }
+        if (manifest.Value<int?>("schema_version") != 3)
+            throw new InvalidDataException("Only ANI Cursor manifest schema_version 3 is supported.");
+        var geometry = manifest["geometry"] as JObject
+                       ?? throw new InvalidDataException("Manifest geometry object is required.");
         geometry["world_size_m"] = _worldSize;
         geometry["thickness_m"] = _thickness;
         File.WriteAllText(manifestFile, manifest.ToString(Formatting.Indented));
@@ -622,7 +610,6 @@ public sealed class AniCursorPipelineWindow : EditorWindow
 
         EditorUtility.DisplayProgressBar("ANI Cursor", "生成 FBX と prefab binding を事前検証中…", 0.58f);
         PreflightGeneratedFbx(stagingFbx);
-        if (prefabExists) PreflightExistingPrefab(_prefabAssetPath, _fbxAssetPath, definitions);
 
         var transaction = CreateOutputTransaction(stagingRoot, preparedRoot, definitions);
         try
@@ -644,42 +631,24 @@ public sealed class AniCursorPipelineWindow : EditorWindow
                 _defaultValue);
 
             EditorUtility.DisplayProgressBar("ANI Cursor", "AnimationClip・FX・MA Merge Animator を生成中…", 0.86f);
-            var requestFile = Path.Combine(stagingRoot, "unity_build_request.json");
-            var resultFile = Path.Combine(stagingRoot, "unity_build_result.json");
-            var request = new JObject
+            var unitySummary = AniCursorUnityBuilder.Build(new AniCursorUnityBuilder.BuildSpec
             {
-                ["schemaVersion"] = 1,
-                ["strict"] = true,
-                ["manifest"] = manifestFile.Replace('\\', '/'),
-                ["atlas"] = Path.Combine(preparedRoot, "atlas.png").Replace('\\', '/'),
-                ["prefabPath"] = _prefabAssetPath,
-                ["fbxPath"] = _fbxAssetPath,
-                ["displayPath"] = CursorDisplayPath,
-                ["atlasAssetPath"] = _atlasAssetPath,
-                ["materialPath"] = _materialAssetPath,
-                ["controllerPath"] = _controllerAssetPath,
-                ["clipsFolder"] = _clipsAssetFolder,
-                ["iconsFolder"] = _iconsAssetFolder,
-                ["resultPath"] = resultFile.Replace('\\', '/'),
-                ["parameterName"] = _parameterName,
-                ["defaultValue"] = _defaultValue,
-                ["shader"] = "Unlit/Transparent Cutout",
-                ["alphaCutoff"] = _alphaThreshold / 255f,
-                ["textureProperty"] = "_MainTex",
-                ["unity"] = new JObject
-                {
-                    ["atlas_st_property"] = "material._MainTex_ST",
-                    ["clip_frame_rate"] = 60,
-                    ["loop_time"] = true
-                }
-            };
-            File.WriteAllText(requestFile, request.ToString(Formatting.Indented));
-
-            var unitySummary = AniCursorUnityBuilder.BuildFromRequestFile(requestFile, true);
+                ManifestFile = manifestFile,
+                PrefabAsset = _prefabAssetPath,
+                FbxAsset = _fbxAssetPath,
+                AtlasSourceFile = Path.Combine(preparedRoot, "atlas.png"),
+                AtlasAsset = _atlasAssetPath,
+                MaterialAsset = _materialAssetPath,
+                ControllerAsset = _controllerAssetPath,
+                ClipsFolder = _clipsAssetFolder,
+                IconsFolder = _iconsAssetFolder,
+                ParameterName = _parameterName,
+                DefaultValue = _defaultValue
+            });
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
 
-            var count = ReadInt(manifest, "cursor_count", "cursorCount");
+            var count = manifest.Value<int>("cursor_count");
             Selection.activeObject = AssetDatabase.LoadAssetAtPath<GameObject>(_prefabAssetPath);
             EditorGUIUtility.PingObject(Selection.activeObject);
             transaction.Commit();
@@ -739,11 +708,8 @@ public sealed class AniCursorPipelineWindow : EditorWindow
 
         foreach (var definition in definitions)
         {
-            var clipPath = string.IsNullOrWhiteSpace(definition.ClipAssetPath)
-                ? NormalizeAssetPath(_clipsAssetFolder).TrimEnd('/') + "/" +
-                  SafeFileStem(definition.AssetName, "Cursor") + ".anim"
-                : RequireAssetPathWithExtension(definition.ClipAssetPath, ".anim", "Animation clip");
-            definition.ClipAssetPath = clipPath;
+            var clipPath = NormalizeAssetPath(_clipsAssetFolder).TrimEnd('/') + "/" +
+                           SafeFileStem(definition.AssetName, "Cursor") + ".anim";
             transaction.CaptureAsset(clipPath);
         }
 
@@ -758,13 +724,13 @@ public sealed class AniCursorPipelineWindow : EditorWindow
     {
         if (definitions.Count == 0)
             throw new InvalidDataException("Manifest contains no cursor definitions.");
-        var declaredCount = ReadInt(manifest, -1, "cursor_count", "cursorCount");
-        if (declaredCount >= 0 && declaredCount != definitions.Count)
+        var declaredCount = manifest.Value<int?>("cursor_count")
+                            ?? throw new InvalidDataException("Manifest cursor_count is required.");
+        if (declaredCount != definitions.Count)
             throw new InvalidDataException(
                 "Manifest cursor_count does not match cursors: " + declaredCount + " != " + definitions.Count);
 
         var assets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var objects = new HashSet<string>(StringComparer.Ordinal);
         var values = new HashSet<int>();
         var preparedFull = Path.GetFullPath(preparedRoot)
             .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
@@ -774,16 +740,10 @@ public sealed class AniCursorPipelineWindow : EditorWindow
             if (string.IsNullOrWhiteSpace(definition.AssetName) || !assets.Add(definition.AssetName))
                 throw new InvalidDataException("Manifest has an empty or duplicate asset_name: " +
                                                definition.AssetName);
-            if (string.IsNullOrWhiteSpace(definition.ObjectName) || !objects.Add(definition.ObjectName))
-                throw new InvalidDataException("Manifest has an empty or duplicate object_name: " +
-                                               definition.ObjectName);
             if (!values.Add(definition.Value))
                 throw new InvalidDataException("Manifest has a duplicate parameter value: " + definition.Value);
             if (definition.Value < 0 || definition.Value > 255)
                 throw new InvalidDataException("VRChat Int parameter values must be 0..255: " + definition.Value);
-            if (string.IsNullOrWhiteSpace(definition.RendererPath))
-                throw new InvalidDataException("Manifest renderer_path is empty for " + definition.AssetName);
-
             var iconRelative = (definition.IconFile ?? string.Empty)
                 .Replace('/', Path.DirectorySeparatorChar)
                 .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
@@ -852,83 +812,6 @@ public sealed class AniCursorPipelineWindow : EditorWindow
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             }
         }
-    }
-
-    private static void PreflightExistingPrefab(
-        string prefabAssetPath,
-        string fbxAssetPath,
-        IEnumerable<CursorDefinition> definitions)
-    {
-        var root = PrefabUtility.LoadPrefabContents(prefabAssetPath);
-        if (root == null) throw new InvalidOperationException("Could not load prefab: " + prefabAssetPath);
-        try
-        {
-            var display = root.transform.Find(CursorDisplayPath);
-            if (display != null && display.GetComponent<Renderer>() != null)
-            {
-                ValidateRendererMeshAsset(display, fbxAssetPath, CursorDisplayPath);
-                return;
-            }
-
-            var cursorObjects = root.transform.Find(LegacyCursorObjectsPath);
-            if (cursorObjects == null)
-                throw new InvalidDataException(
-                    "Existing prefab has neither direct CursorDisplay nor legacy CursorObjects.");
-
-            var legacyDisplay = root.transform.Find(LegacyCursorDisplayPath);
-            if (legacyDisplay != null && legacyDisplay.GetComponent<Renderer>() != null)
-            {
-                ValidateRendererMeshAsset(legacyDisplay, fbxAssetPath, LegacyCursorDisplayPath);
-                return;
-            }
-
-            // Unity can collapse a single-object FBX so its renderer is on the
-            // imported model root. Accept that layout; the builder migrates the
-            // components to the animated CursorDisplay child.
-            if (cursorObjects.GetComponent<Renderer>() != null)
-            {
-                ValidateRendererMeshAsset(cursorObjects, fbxAssetPath, LegacyCursorObjectsPath);
-                return;
-            }
-
-            // Legacy layout: one named renderer per cursor track. It is accepted
-            // here because AniCursorUnityBuilder migrates it to CursorDisplay after
-            // the new one-mesh FBX has been imported.
-            foreach (var definition in definitions)
-            {
-                var target = FindDescendant(cursorObjects, definition.ObjectName)?.transform;
-                if (target == null || target.GetComponent<Renderer>() == null)
-                    throw new InvalidDataException(
-                        "Existing prefab has neither shared CursorDisplay nor legacy renderer " +
-                        definition.ObjectName + ".");
-                ValidateRendererMeshAsset(target, fbxAssetPath, definition.ObjectName);
-            }
-        }
-        finally
-        {
-            PrefabUtility.UnloadPrefabContents(root);
-        }
-    }
-
-    private static void ValidateRendererMeshAsset(
-        Transform target,
-        string expectedFbxAssetPath,
-        string label)
-    {
-        Mesh mesh = null;
-        var renderer = target.GetComponent<Renderer>();
-        var filter = target.GetComponent<MeshFilter>();
-        if (filter != null) mesh = filter.sharedMesh;
-        var skinned = renderer as SkinnedMeshRenderer;
-        if (skinned != null) mesh = skinned.sharedMesh;
-        var meshPath = mesh == null ? null : AssetDatabase.GetAssetPath(mesh);
-        if (!string.Equals(
-                NormalizeAssetPath(meshPath),
-                NormalizeAssetPath(expectedFbxAssetPath),
-                StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException(
-                "Existing prefab renderer is not bound to the configured FBX " +
-                expectedFbxAssetPath + ": " + label);
     }
 
     private static IEnumerable<Transform> EnumerateTransforms(Transform root)
@@ -1114,36 +997,23 @@ public sealed class AniCursorPipelineWindow : EditorWindow
 
     private static List<CursorDefinition> ParseCursorDefinitions(JObject manifest)
     {
-        var cursorArray = FindArray(manifest, "cursors", "animations", "tracks");
-        if (cursorArray == null) return new List<CursorDefinition>();
-
-        var fallback = 0;
+        var cursorArray = manifest["cursors"] as JArray
+                          ?? throw new InvalidDataException("Manifest cursors array is required.");
         var result = new List<CursorDefinition>();
         foreach (var cursor in cursorArray.OfType<JObject>())
         {
-            var binding = FindObject(cursor, "binding", "unityBinding", "unity_binding") ?? new JObject();
-            var icon = FindObject(cursor, "icon");
-            var source = ReadString(cursor, "source", "name") ?? "Cursor " + fallback;
-            var assetName = ReadString(binding, "asset_name", "assetName")
-                            ?? Path.GetFileNameWithoutExtension(source);
-            var objectName = ReadString(binding, "object_name", "objectName") ?? assetName;
-            var rendererPath = ReadString(binding,
-                "renderer_path", "rendererPath", "binding_path", "bindingPath")
-                               ?? CursorDisplayPath;
-            var clipPath = ReadString(binding, "clip_path", "clipPath");
+            var binding = cursor["binding"] as JObject
+                          ?? throw new InvalidDataException("Manifest cursor.binding is required.");
+            var icon = cursor["icon"] as JObject
+                       ?? throw new InvalidDataException("Manifest cursor.icon is required.");
             result.Add(new CursorDefinition
             {
-                AssetName = assetName,
-                ObjectName = objectName,
-                RendererPath = rendererPath,
-                ClipAssetPath = clipPath,
-                Label = ReadString(binding, "menu_label", "menuLabel")
-                        ?? Path.GetFileNameWithoutExtension(source),
-                IconFile = ReadString(icon, "file", "path") ?? "icons/" + assetName + ".png",
-                MenuOrder = ReadInt(binding, fallback, "menu_order", "menuOrder"),
-                Value = ReadInt(binding, fallback, "parameter_value", "parameterValue", "value")
+                AssetName = RequiredJsonString(binding, "asset_name"),
+                Label = RequiredJsonString(binding, "menu_label"),
+                IconFile = RequiredJsonString(icon, "file"),
+                MenuOrder = RequiredJsonInt(binding, "menu_order"),
+                Value = RequiredJsonInt(binding, "parameter_value")
             });
-            fallback++;
         }
 
         return result.OrderBy(item => item.MenuOrder).ThenBy(item => item.Value).ToList();
@@ -1155,17 +1025,6 @@ public sealed class AniCursorPipelineWindow : EditorWindow
         if (string.IsNullOrWhiteSpace(fileName)) return null;
         return AssetDatabase.LoadAssetAtPath<Texture2D>(
             NormalizeAssetPath(iconsAssetFolder).TrimEnd('/') + "/" + fileName);
-    }
-
-    private static GameObject FindDescendant(Transform root, string name)
-    {
-        if (string.Equals(root.name, name, StringComparison.Ordinal)) return root.gameObject;
-        foreach (Transform child in root)
-        {
-            var result = FindDescendant(child, name);
-            if (result != null) return result;
-        }
-        return null;
     }
 
     private static GameObject NewChild(Transform parent, string name)
@@ -1438,45 +1297,18 @@ public sealed class AniCursorPipelineWindow : EditorWindow
         if (!Directory.Exists(path)) throw new DirectoryNotFoundException(label + " が見つかりません: " + path);
     }
 
-    private static JToken FindToken(JToken token, params string[] names)
+    private static string RequiredJsonString(JObject obj, string name)
     {
-        var obj = token as JObject;
-        if (obj == null) return null;
-        foreach (var property in obj.Properties())
-        foreach (var name in names)
-            if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
-                return property.Value;
-        return null;
+        var value = obj.Value<string>(name);
+        if (string.IsNullOrWhiteSpace(value))
+            throw new InvalidDataException("Manifest field is required: " + name);
+        return value;
     }
 
-    private static JObject FindObject(JToken token, params string[] names)
+    private static int RequiredJsonInt(JObject obj, string name)
     {
-        return FindToken(token, names) as JObject;
-    }
-
-    private static JArray FindArray(JToken token, params string[] names)
-    {
-        return FindToken(token, names) as JArray;
-    }
-
-    private static string ReadString(JToken token, params string[] names)
-    {
-        var value = FindToken(token, names);
-        return value == null || value.Type == JTokenType.Null ? null : value.ToString();
-    }
-
-    private static int ReadInt(JToken token, int fallback, params string[] names)
-    {
-        var value = FindToken(token, names);
-        if (value == null || value.Type == JTokenType.Null) return fallback;
-        if (int.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var result))
-            return result;
-        return fallback;
-    }
-
-    private static int ReadInt(JToken token, params string[] names)
-    {
-        return ReadInt(token, 0, names);
+        return obj.Value<int?>(name)
+               ?? throw new InvalidDataException("Manifest field is required: " + name);
     }
 
     private static string ReadCommandLineValue(IList<string> arguments, string flag)

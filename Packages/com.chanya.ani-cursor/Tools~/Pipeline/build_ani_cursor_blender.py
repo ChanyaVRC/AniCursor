@@ -36,13 +36,8 @@ REPORT_PATH = REST[0] if REST else ""
 manifest_path = Path(MANIFEST_PATH).resolve()
 manifest_root = manifest_path.parent
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-
-
-def _first(mapping: dict, *names, default=None):
-    for name in names:
-        if name in mapping:
-            return mapping[name]
-    return default
+if manifest.get("schema_version") != 3:
+    raise RuntimeError("Only ANI Cursor manifest schema_version 3 is supported")
 
 
 def _resolve(value: str) -> Path:
@@ -50,63 +45,42 @@ def _resolve(value: str) -> Path:
     return path if path.is_absolute() else (manifest_root / path).resolve()
 
 
-atlas_settings = manifest.get("atlas", {})
+atlas_settings = manifest.get("atlas")
 if not isinstance(atlas_settings, dict):
     raise RuntimeError("Manifest atlas must be an object")
-atlas_frames = _first(atlas_settings, "frames", "cells", default=[])
+atlas_frames = atlas_settings.get("frames")
 if not isinstance(atlas_frames, list) or not atlas_frames:
-    raise RuntimeError("Manifest atlas contains no frames/cells")
+    raise RuntimeError("Manifest atlas.frames must be a non-empty array")
 atlas_frames_by_id = {}
 for atlas_frame in atlas_frames:
     if not isinstance(atlas_frame, dict):
         raise RuntimeError("Manifest atlas frame must be an object")
-    atlas_frame_id = _first(atlas_frame, "frame_id", "frameId", "id")
+    atlas_frame_id = atlas_frame.get("frame_id")
     if not atlas_frame_id:
         raise RuntimeError("Manifest atlas frame has no frame_id")
     atlas_frames_by_id[str(atlas_frame_id)] = atlas_frame
 
-image_settings = manifest.get("image", {}) if isinstance(manifest.get("image"), dict) else {}
-SIZE = int(
-    _first(
-        manifest,
-        "size_px",
-        "pixel_size",
-        "frame_size",
-        default=_first(image_settings, "width", default=32),
-    )
-)
-WORLD_SIZE = float(_first(manifest, "world_size_m", "world_size", default=0.12))
-THICKNESS = float(_first(manifest, "thickness_m", "thickness", default=0.004))
-geometry_settings = (
-    manifest.get("geometry", {}) if isinstance(manifest.get("geometry"), dict) else {}
-)
-GEOMETRY_MODE = str(
-    _first(geometry_settings, "mode", default="global_alpha_signature_closed_plate")
-)
+image_settings = manifest.get("image")
+if not isinstance(image_settings, dict):
+    raise RuntimeError("Manifest image must be an object")
+SIZE = int(image_settings["width"])
+if int(image_settings["height"]) != SIZE:
+    raise RuntimeError("Manifest image must be square")
+
+geometry_settings = manifest.get("geometry")
+if not isinstance(geometry_settings, dict):
+    raise RuntimeError("Manifest geometry must be an object")
+GEOMETRY_MODE = str(geometry_settings["mode"])
 if GEOMETRY_MODE != "global_alpha_signature_closed_plate":
     raise RuntimeError(f"Unsupported geometry mode: {GEOMETRY_MODE}")
-DISPLAY_OBJECT_NAME = str(
-    _first(geometry_settings, "object_name", "objectName", default="CursorDisplay")
-)
-DISPLAY_RENDERER_PATH = str(
-    _first(
-        geometry_settings,
-        "renderer_path",
-        "rendererPath",
-        default="CursorDisplay",
-    )
-)
-ALPHA_THRESHOLD = int(
-    _first(geometry_settings, "alpha_threshold", "alphaThreshold", default=128)
-)
+DISPLAY_OBJECT_NAME = "CursorDisplay"
+ALPHA_THRESHOLD = int(geometry_settings["alpha_threshold"])
 if not 1 <= ALPHA_THRESHOLD <= 255:
     raise RuntimeError("Geometry alpha threshold must be between 1 and 255")
-WORLD_SIZE = float(
-    _first(geometry_settings, "world_size_m", "worldSizeM", default=WORLD_SIZE)
-)
-THICKNESS = float(
-    _first(geometry_settings, "thickness_m", "thicknessM", default=THICKNESS)
-)
+WORLD_SIZE = float(geometry_settings["world_size_m"])
+THICKNESS = float(geometry_settings["thickness_m"])
+if WORLD_SIZE <= 0.0 or THICKNESS <= 0.0:
+    raise RuntimeError("Geometry world size and thickness must be positive")
 HALF_THICKNESS = THICKNESS * 0.5
 PIXEL_SIZE = WORLD_SIZE / SIZE
 
@@ -544,16 +518,11 @@ logo_tracer = load_logo_tracer(LOGOTRACER_ZIP)
 shared_material = bpy.data.materials.new("AniCursorAtlas")
 reports = []
 
-cursor_entries = _first(manifest, "cursors", "items", default=[])
-if not cursor_entries:
-    raise RuntimeError("Manifest contains no cursors/items")
+cursor_entries = manifest.get("cursors")
+if not isinstance(cursor_entries, list) or not cursor_entries:
+    raise RuntimeError("Manifest cursors must be a non-empty array")
 
-basis_frame_ids = _first(
-    geometry_settings,
-    "signature_basis_frame_ids",
-    "signatureBasisFrameIds",
-    default=[str(_first(frame, "frame_id", "frameId", "id")) for frame in atlas_frames],
-)
+basis_frame_ids = geometry_settings.get("signature_basis_frame_ids")
 if not isinstance(basis_frame_ids, list) or not basis_frame_ids:
     raise RuntimeError("Geometry signature basis must contain at least one frame id")
 basis_frame_ids = [str(frame_id) for frame_id in basis_frame_ids]
@@ -566,7 +535,7 @@ for frame_id in basis_frame_ids:
     atlas_frame = atlas_frames_by_id.get(frame_id)
     if atlas_frame is None:
         raise RuntimeError(f"Geometry signature basis references unknown frame {frame_id}")
-    frame_file = _first(atlas_frame, "file", "path")
+    frame_file = atlas_frame.get("file")
     if not frame_file:
         raise RuntimeError(f"Atlas frame {frame_id} has no source file")
     frame_mask, frame_image = load_mask(_resolve(str(frame_file)))
@@ -642,7 +611,6 @@ payload = {
     "geometry_mode": GEOMETRY_MODE,
     "object_count": 1,
     "object_name": DISPLAY_OBJECT_NAME,
-    "renderer_path": DISPLAY_RENDERER_PATH,
     "size_px": SIZE,
     "world_size_m": WORLD_SIZE,
     "thickness_m": THICKNESS,
