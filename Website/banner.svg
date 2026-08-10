@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="256" viewBox="0 0 1280 256" role="img" aria-labelledby="title desc">
+  <title id="title">ANI Cursor Tool</title>
+  <desc id="desc">ANI Cursor ToolのVPMパッケージリスト用バナー</desc>
+  <rect width="1280" height="256" fill="#f5f7ff"/>
+  <rect width="16" height="256" fill="#0874e7"/>
+  <path d="M72 55v112l31-31 25 63 30-12-26-62h54z" fill="#0874e7"/>
+  <path d="M60 43v112l31-31 25 63 30-12-26-62h54z" fill="#f5f7ff" stroke="#171b29" stroke-width="8" stroke-linejoin="miter"/>
+  <text x="236" y="112" fill="#171b29" font-family="Arial, sans-serif" font-size="58" font-weight="700" letter-spacing="5">ANI/CURSOR</text>
+  <text x="240" y="158" fill="#4f5668" font-family="Consolas, monospace" font-size="22" font-weight="600" letter-spacing="2">WINDOWS .ANI  →  32 × 32  →  VRCHAT + MODULAR AVATAR</text>
+  <g transform="translate(1040 32)" stroke="#c9cfdf" stroke-width="1">
+    <path d="M0 0v192M16 0v192M32 0v192M48 0v192M64 0v192M80 0v192M96 0v192M112 0v192M128 0v192M144 0v192M160 0v192M176 0v192M192 0v192"/>
+    <path d="M0 0h192M0 16h192M0 32h192M0 48h192M0 64h192M0 80h192M0 96h192M0 112h192M0 128h192M0 144h192M0 160h192M0 176h192M0 192h192"/>
+  </g>
+  <rect x="1040" y="32" width="192" height="192" fill="none" stroke="#aeb6ca" stroke-width="2"/>
+</svg>

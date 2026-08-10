@@ -1,5 +1,3 @@
-import { baseLayerLuminance, StandardLuminance } from 'https://unpkg.com/@fluentui/web-components@2.6.1';
-
 const LISTING_URL = "{{ listingInfo.Url }}";
 
 const PACKAGE_DESCRIPTIONS_JA = {
@@ -36,220 +34,186 @@ const PACKAGES = {
       {{~ end ~}}
     ],
     license: "{{ package.License }}",
-    licensesUrl: "{{ package.LicensesUrl }}",
+    licensesUrl: "{{ package.LicenseUrl }}",
   },
 {{~ end ~}}
 };
 
-const setTheme = () => {
-  const isDarkTheme = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
-  if (isDarkTheme()) {
-    baseLayerLuminance.setValueFor(document.documentElement, StandardLuminance.DarkMode);
-  } else {
-    baseLayerLuminance.setValueFor(document.documentElement, StandardLuminance.LightMode);
-  }
-}
+const packageGrid = document.getElementById("packageGrid");
+const searchInput = document.getElementById("searchInput");
+const emptyState = document.getElementById("emptyState");
+const searchStatus = document.getElementById("searchStatus");
+const copyStatus = document.getElementById("copyStatus");
+const helpDialog = document.getElementById("addListingToVccHelp");
+const packageDialog = document.getElementById("packageInfoModal");
 
-(() => {
-  setTheme();
+const openVccListing = () => {
+  window.location.assign(`vcc://vpm/addRepo?url=${encodeURIComponent(LISTING_URL)}`);
+};
 
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    setTheme();
+const showDialog = (dialog, focusTarget) => {
+  if (!dialog || dialog.open) return;
+  const openDialog = document.querySelector("dialog[open]");
+  if (openDialog) openDialog.close();
+  dialog.showModal();
+  requestAnimationFrame(() => focusTarget?.focus({ preventScroll: true }));
+};
+
+const closeOnBackdrop = dialog => {
+  dialog?.addEventListener("click", event => {
+    if (event.target === dialog) dialog.close();
   });
+};
 
-  const packageGrid = document.getElementById('packageGrid');
+const writeClipboard = async value => {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
 
-  packageGrid.querySelectorAll('fluent-data-grid-row[data-package-id]').forEach(row => {
-    const description = PACKAGES?.[row.dataset?.packageId]?.description;
-    const descriptionElement = row.querySelector('.packageDescription');
-    if (description && descriptionElement) {
-      descriptionElement.textContent = description;
+  const fallback = document.createElement("textarea");
+  fallback.value = value;
+  fallback.setAttribute("readonly", "");
+  fallback.className = "clipboard-fallback";
+  document.body.appendChild(fallback);
+  fallback.select();
+  const copied = document.execCommand("copy");
+  fallback.remove();
+  if (!copied) throw new Error("Clipboard copy failed");
+};
+
+const setCopyFeedback = (button, state) => {
+  const label = button.querySelector(".copy-button__label");
+  const succeeded = state === "success";
+  button.dataset.state = state;
+  if (label) label.textContent = succeeded ? "コピー済み" : "コピー失敗";
+  copyStatus.textContent = succeeded ? "パッケージリストURLをコピーしました。" : "URLをコピーできませんでした。手動で選択してください。";
+
+  window.setTimeout(() => {
+    delete button.dataset.state;
+    if (label) label.textContent = "コピー";
+  }, 2500);
+};
+
+document.querySelectorAll("[data-add-vcc]").forEach(button => {
+  button.addEventListener("click", openVccListing);
+});
+document.getElementById("vccAddRepoButton")?.addEventListener("click", openVccListing);
+document.querySelectorAll(".rowAddToVccButton").forEach(button => {
+  button.addEventListener("click", openVccListing);
+});
+
+document.querySelectorAll("[data-copy-target]").forEach(button => {
+  button.addEventListener("click", async () => {
+    const input = document.getElementById(button.dataset.copyTarget);
+    if (!input) return;
+    try {
+      await writeClipboard(input.value);
+      setCopyFeedback(button, "success");
+    } catch (error) {
+      input.select();
+      setCopyFeedback(button, "error");
+      console.error("パッケージリストURLをコピーできませんでした。", error);
     }
   });
+});
 
-  packageGrid.querySelectorAll('[data-package-type]').forEach(cell => {
-    cell.textContent = PACKAGE_TYPES_JA[cell.dataset.packageType] ?? cell.dataset.packageType;
-  });
+packageGrid.querySelectorAll("[data-package-row]").forEach(row => {
+  const packageInfo = PACKAGES[row.dataset.packageId];
+  const description = row.querySelector(".packageDescription");
+  const type = row.querySelector("[data-package-type]");
+  if (packageInfo?.description && description) description.textContent = packageInfo.description;
+  if (type) type.textContent = PACKAGE_TYPES_JA[type.dataset.packageType] ?? type.dataset.packageType;
+});
 
-  const searchInput = document.getElementById('searchInput');
-  searchInput.addEventListener('input', ({ target: { value = '' }}) => {
-    const items = packageGrid.querySelectorAll('fluent-data-grid-row[row-type="default"]');
-    items.forEach(item => {
-      if (value === '') {
-        item.style.display = 'grid';
-        return;
-      }
-      if (
-        item.dataset?.packageName?.toLowerCase()?.includes(value.toLowerCase()) ||
-        item.dataset?.packageId?.toLowerCase()?.includes(value.toLowerCase())
-      ) {
-        item.style.display = 'grid';
-      } else {
-        item.style.display = 'none';
-      }
+let searchTimer;
+searchInput.addEventListener("input", () => {
+  window.clearTimeout(searchTimer);
+  searchTimer = window.setTimeout(() => {
+    const query = searchInput.value.trim().toLocaleLowerCase("ja");
+    const rows = [...packageGrid.querySelectorAll("[data-package-row]")];
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const name = row.dataset.packageName?.toLocaleLowerCase("ja") ?? "";
+      const id = row.dataset.packageId?.toLocaleLowerCase("ja") ?? "";
+      const visible = query === "" || name.includes(query) || id.includes(query);
+      row.hidden = !visible;
+      if (visible) visibleCount += 1;
     });
-  });
 
-  const urlBarHelpButton = document.getElementById('urlBarHelp');
-  const addListingToVccHelp = document.getElementById('addListingToVccHelp');
-  urlBarHelpButton.addEventListener('click', () => {
-    addListingToVccHelp.hidden = false;
-  });
-  const addListingToVccHelpClose = document.getElementById('addListingToVccHelpClose');
-  addListingToVccHelpClose.addEventListener('click', () => {
-    addListingToVccHelp.hidden = true;
-  });
+    emptyState.hidden = visibleCount !== 0;
+    searchStatus.textContent = `${visibleCount}件のパッケージを表示しています。`;
+  }, 250);
+});
 
-  const vccListingInfoUrlFieldCopy = document.getElementById('vccListingInfoUrlFieldCopy');
-  vccListingInfoUrlFieldCopy.addEventListener('click', () => {
-    const vccUrlField = document.getElementById('vccListingInfoUrlField');
-    vccUrlField.select();
-    navigator.clipboard.writeText(vccUrlField.value);
-    vccUrlFieldCopy.appearance = 'accent';
-    setTimeout(() => {
-      vccUrlFieldCopy.appearance = 'neutral';
-    }, 1000);
-  });
+document.getElementById("urlBarHelp")?.addEventListener("click", () => {
+  showDialog(helpDialog, document.getElementById("addListingToVccHelpClose"));
+});
+document.getElementById("addListingToVccHelpClose")?.addEventListener("click", () => helpDialog.close());
+document.getElementById("packageInfoModalClose")?.addEventListener("click", () => packageDialog.close());
+document.getElementById("packageInfoListingHelp")?.addEventListener("click", () => {
+  packageDialog.close();
+  showDialog(helpDialog, document.getElementById("addListingToVccHelpClose"));
+});
+closeOnBackdrop(helpDialog);
+closeOnBackdrop(packageDialog);
 
-  const vccAddRepoButton = document.getElementById('vccAddRepoButton');
-  vccAddRepoButton.addEventListener('click', () => window.location.assign(`vcc://vpm/addRepo?url=${encodeURIComponent(LISTING_URL)}`));
+const packageInfoName = document.getElementById("packageInfoName");
+const packageInfoId = document.getElementById("packageInfoId");
+const packageInfoVersion = document.getElementById("packageInfoVersion");
+const packageInfoDescription = document.getElementById("packageInfoDescription");
+const packageInfoAuthor = document.getElementById("packageInfoAuthor");
+const packageInfoDependencies = document.getElementById("packageInfoDependencies");
+const packageInfoDependenciesGroup = document.getElementById("packageInfoDependenciesGroup");
+const packageInfoKeywords = document.getElementById("packageInfoKeywords");
+const packageInfoKeywordsGroup = document.getElementById("packageInfoKeywordsGroup");
+const packageInfoLicense = document.getElementById("packageInfoLicense");
+const packageInfoLicenseGroup = document.getElementById("packageInfoLicenseGroup");
 
-  const vccUrlFieldCopy = document.getElementById('vccUrlFieldCopy');
-  vccUrlFieldCopy.addEventListener('click', () => {
-    const vccUrlField = document.getElementById('vccUrlField');
-    vccUrlField.select();
-    navigator.clipboard.writeText(vccUrlField.value);
-    vccUrlFieldCopy.appearance = 'accent';
-    setTimeout(() => {
-      vccUrlFieldCopy.appearance = 'neutral';
-    }, 1000);
-  });
+document.querySelectorAll(".rowPackageInfoButton").forEach(button => {
+  button.addEventListener("click", event => {
+    const packageId = event.currentTarget.dataset.packageId;
+    const packageInfo = PACKAGES[packageId];
+    if (!packageInfo) {
+      console.error(`パッケージ ${packageId} が見つかりません。`, PACKAGES);
+      return;
+    }
 
-  const rowMoreMenu = document.getElementById('rowMoreMenu');
-  const hideRowMoreMenu = e => {
-    if (rowMoreMenu.contains(e.target)) return;
-    document.removeEventListener('click', hideRowMoreMenu);
-    rowMoreMenu.hidden = true;
-  }
+    packageInfoName.textContent = packageInfo.displayName;
+    packageInfoId.textContent = packageId;
+    packageInfoVersion.textContent = `v${packageInfo.version}`;
+    packageInfoDescription.textContent = packageInfo.description;
+    packageInfoAuthor.textContent = packageInfo.author.name;
+    packageInfoAuthor.href = packageInfo.author.url;
 
-  const rowMenuButtons = document.querySelectorAll('.rowMenuButton');
-  rowMenuButtons.forEach(button => {
-    button.addEventListener('click', e => {
-      if (rowMoreMenu?.hidden) {
-        rowMoreMenu.style.top = `${e.clientY + e.target.clientHeight}px`;
-        rowMoreMenu.style.left = `${e.clientX - 120}px`;
-        rowMoreMenu.hidden = false;
-
-        const downloadLink = rowMoreMenu.querySelector('#rowMoreMenuDownload');
-        const downloadListener = () => {
-          window.open(e?.target?.dataset?.packageUrl, '_blank');
-        }
-        downloadLink.addEventListener('change', () => {
-          downloadListener();
-          downloadLink.removeEventListener('change', downloadListener);
-        });
-
-        setTimeout(() => {
-          document.addEventListener('click', hideRowMoreMenu);
-        }, 1);
-      }
+    const dependencies = Object.entries(packageInfo.dependencies);
+    packageInfoDependencies.replaceChildren();
+    packageInfoDependenciesGroup.hidden = dependencies.length === 0;
+    dependencies.forEach(([name, version]) => {
+      const item = document.createElement("li");
+      const packageName = document.createElement("code");
+      packageName.textContent = name;
+      const packageVersion = document.createElement("span");
+      packageVersion.textContent = `v${version}`;
+      item.append(packageName, packageVersion);
+      packageInfoDependencies.appendChild(item);
     });
-  });
 
-  const packageInfoModal = document.getElementById('packageInfoModal');
-  const packageInfoModalClose = document.getElementById('packageInfoModalClose');
-  packageInfoModalClose.addEventListener('click', () => {
-    packageInfoModal.hidden = true;
-  });
-
-  // Fluent dialogs use nested shadow-rooted elements, so we need to use JS to style them
-  const modalControl = packageInfoModal.shadowRoot.querySelector('.control');
-  modalControl.style.maxHeight = "90%";
-  modalControl.style.transition = 'height 0.2s ease-in-out';
-  modalControl.style.overflowY = 'hidden';
-
-  const packageInfoName = document.getElementById('packageInfoName');
-  const packageInfoId = document.getElementById('packageInfoId');
-  const packageInfoVersion = document.getElementById('packageInfoVersion');
-  const packageInfoDescription = document.getElementById('packageInfoDescription');
-  const packageInfoAuthor = document.getElementById('packageInfoAuthor');
-  const packageInfoDependencies = document.getElementById('packageInfoDependencies');
-  const packageInfoKeywords = document.getElementById('packageInfoKeywords');
-  const packageInfoLicense = document.getElementById('packageInfoLicense');
-
-  const rowAddToVccButtons = document.querySelectorAll('.rowAddToVccButton');
-  rowAddToVccButtons.forEach((button) => {
-    button.addEventListener('click', () => window.location.assign(`vcc://vpm/addRepo?url=${encodeURIComponent(LISTING_URL)}`));
-  });
-
-  const rowPackageInfoButton = document.querySelectorAll('.rowPackageInfoButton');
-  rowPackageInfoButton.forEach((button) => {
-    button.addEventListener('click', e => {
-      const packageId = e.target.dataset?.packageId;
-      const packageInfo = PACKAGES?.[packageId];
-      if (!packageInfo) {
-        console.error(`パッケージ ${packageId} が見つかりません。利用可能なパッケージ:`, PACKAGES);
-        return;
-      }
-
-      packageInfoName.textContent = packageInfo.displayName;
-      packageInfoId.textContent = packageId;
-      packageInfoVersion.textContent = `v${packageInfo.version}`;
-      packageInfoDescription.textContent = packageInfo.description;
-      packageInfoAuthor.textContent = packageInfo.author.name;
-      packageInfoAuthor.href = packageInfo.author.url;
-
-      if ((packageInfo.keywords?.length ?? 0) === 0) {
-        packageInfoKeywords.parentElement.classList.add('hidden');
-      } else {
-        packageInfoKeywords.parentElement.classList.remove('hidden');
-        packageInfoKeywords.innerHTML = null;
-        packageInfo.keywords.forEach(keyword => {
-          const keywordDiv = document.createElement('div');
-          keywordDiv.classList.add('me-2', 'mb-2', 'badge');
-          keywordDiv.textContent = keyword;
-          packageInfoKeywords.appendChild(keywordDiv);
-        });
-      }
-
-      if (!packageInfo.license?.length && !packageInfo.licensesUrl?.length) {
-        packageInfoLicense.parentElement.classList.add('hidden');
-      } else {
-        packageInfoLicense.parentElement.classList.remove('hidden');
-        packageInfoLicense.textContent = packageInfo.license ?? 'ライセンスを確認';
-        packageInfoLicense.href = packageInfo.licensesUrl ?? '#';
-      }
-
-      packageInfoDependencies.innerHTML = null;
-      Object.entries(packageInfo.dependencies).forEach(([name, version]) => {
-        const depRow = document.createElement('li');
-        depRow.classList.add('mb-2');
-        depRow.textContent = `${name} @ v${version}`;
-        packageInfoDependencies.appendChild(depRow);
-      });
-
-      packageInfoModal.hidden = false;
-
-      setTimeout(() => {
-        const height = packageInfoModal.querySelector('.col').clientHeight;
-        modalControl.style.setProperty('--dialog-height', `${height + 14}px`);
-      }, 1);
+    packageInfoKeywords.replaceChildren();
+    packageInfoKeywordsGroup.hidden = packageInfo.keywords.length === 0;
+    packageInfo.keywords.forEach(keyword => {
+      const badge = document.createElement("span");
+      badge.className = "keyword";
+      badge.textContent = keyword;
+      packageInfoKeywords.appendChild(badge);
     });
-  });
 
-  const packageInfoVccUrlFieldCopy = document.getElementById('packageInfoVccUrlFieldCopy');
-  packageInfoVccUrlFieldCopy.addEventListener('click', () => {
-    const vccUrlField = document.getElementById('packageInfoVccUrlField');
-    vccUrlField.select();
-    navigator.clipboard.writeText(vccUrlField.value);
-    vccUrlFieldCopy.appearance = 'accent';
-    setTimeout(() => {
-      vccUrlFieldCopy.appearance = 'neutral';
-    }, 1000);
-  });
+    const hasLicense = Boolean(packageInfo.license || packageInfo.licensesUrl);
+    packageInfoLicenseGroup.hidden = !hasLicense;
+    packageInfoLicense.textContent = packageInfo.license || "ライセンスを確認";
+    packageInfoLicense.href = packageInfo.licensesUrl || "https://github.com/ChanyaVRC/AniCursor/blob/main/LICENSE.md";
 
-  const packageInfoListingHelp = document.getElementById('packageInfoListingHelp');
-  packageInfoListingHelp.addEventListener('click', () => {
-    addListingToVccHelp.hidden = false;
+    showDialog(packageDialog, document.getElementById("packageInfoModalClose"));
   });
-})();
+});

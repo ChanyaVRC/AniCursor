@@ -2,220 +2,204 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7ff">
+  <meta name="description" content="WindowsのANIカーソルから、VRChat / Modular Avatar対応の立体アニメーションカーソルを生成するVPMパッケージです。">
   <title>ANI Cursor Tool | VPMパッケージリスト</title>
-  <script type="module" src="https://unpkg.com/@fluentui/web-components@2.6.1"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Noto+Sans+JP:wght@400;500;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="styles.css">
-  <link rel="icon" href="./favicon.ico">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
-  <div class="col align-items-center content">
-    <div id="listingInfo" class="col mb-4 w-100 align-items-center">
-      {{~ if listingInfo.BannerImage; ~}}
-        <div class="bannerImage" style="background-image: url({{ listingInfo.BannerImageUrl }})"></div>
-      {{~ end; ~}}
-      <h1>
-        {{~ listingInfo.Name ~}}
-      </h1>
-      {{~ if listingInfo.Description; ~}}
-        <div class="caption1 mb-2">{{ listingInfo.Description }}</div>
-      {{~ end; ~}}
-      <div class="col align-items-center">
-        {{~ if listingInfo.Author.Email; ~}}
-        <fluent-tooltip id="publishedByTooltip" anchor="publishedByText">
-          {{ listingInfo.Author.Email }}
-        </fluent-tooltip>
-        {{~ end; ~}}
-        <div class="caption1 mb-2" id="publishedByText">公開者: <a href="{{listingInfo.Author.Url}}" target="_blank">{{ listingInfo.Author.Name }}</a></div>
-        {{~ if listingInfo.InfoLink.Url ~}}
-          <div class="caption1" id="publishedByText">
-            <a href="{{listingInfo.InfoLink.Url}}" target="_blank">{{ if listingInfo.InfoLink.Text; listingInfo.InfoLink.Text; else; "詳しく見る"; end; }}</a>
-          </div>
-        {{~ end; ~}}
+  <a class="skip-link" href="#mainContent">本文へ移動</a>
+
+  <div class="site-shell" id="pageShell">
+    <header class="topbar">
+      <a class="wordmark" href="https://github.com/ChanyaVRC/AniCursor" target="_blank" rel="noopener noreferrer" aria-label="ANI Cursor Tool GitHubリポジトリ">
+        <span class="wordmark__cursor" aria-hidden="true"></span>
+        <span>ANI/CURSOR</span>
+      </a>
+      <div class="topbar__meta">
+        <span class="topbar__label">VPMパッケージ</span>
+        <button class="button button--small button--primary" type="button" data-add-vcc>VCCに追加</button>
       </div>
-    </div>
-    <div class="addToVccBlock mt-4 row align-items-center">
-      <fluent-text-field aria-readonly="true" aria-label="パッケージリストURL" id="vccUrlField" class="vccUrlField" readonly value="{{ listingInfo.Url }}">
-      </fluent-text-field>
-      <fluent-button appearance="accent" class="ms-2" id="vccAddRepoButton">VCCに追加</fluent-button>
-      <fluent-button class="ms-2" id="vccUrlFieldCopy">
-        <svg slot="start" width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-          <path d="M8 2C6.89543 2 6 2.89543 6 4V14C6 15.1046 6.89543 16 8 16H14C15.1046 16 16 15.1046 16 14V4C16 2.89543 15.1046 2 14 2H8ZM7 4C7 3.44772 7.44772 3 8 3H14C14.5523 3 15 3.44772 15 4V14C15 14.5523 14.5523 15 14 15H8C7.44772 15 7 14.5523 7 14V4ZM4 6.00001C4 5.25973 4.4022 4.61339 5 4.26758V14.5C5 15.8807 6.11929 17 7.5 17H13.7324C13.3866 17.5978 12.7403 18 12 18H7.5C5.567 18 4 16.433 4 14.5V6.00001Z"/>
-        </svg>
-        コピー
-      </fluent-button>
-      <fluent-tooltip id="urlBarHelpTooltip" anchor="urlBarHelp">
-        VCCにパッケージリストを追加する方法
-      </fluent-tooltip>
-      <fluent-button id="urlBarHelp" appearance="stealth" class="ms-2" aria-label="VCCへの追加方法を表示">
-        <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 4V16C4 17.1046 4.89543 18 6 18H15.5C15.7761 18 16 17.7761 16 17.5C16 17.2239 15.7761 17 15.5 17H6C5.44772 17 5 16.5523 5 16H15C15.5523 16 16 15.5523 16 15V4C16 2.89543 15.1046 2 14 2H6C4.89543 2 4 2.89543 4 4ZM14 3C14.5523 3 15 3.44772 15 4V15H5V4C5 3.44772 5.44772 3 6 3H14ZM8.76069 6.40877C8.95015 6.21142 9.31074 6 10 6C10.6893 6 11.0499 6.21142 11.2393 6.40877C11.4409 6.61877 11.5 6.86546 11.5 7C11.5 7.4539 11.2301 7.69835 10.7773 7.92363C10.6657 7.97916 10.552 8.02883 10.4343 8.0797L10.4116 8.08953C10.3056 8.13534 10.1902 8.18521 10.088 8.23655C9.98257 8.28953 9.85193 8.36283 9.7433 8.46505C9.62799 8.57355 9.5 8.75189 9.5 9V9.99999C9.5 10.2761 9.72386 10.5 10 10.5C10.2761 10.5 10.5 10.2753 10.5 9.99918V9.1493C10.5111 9.14333 10.5234 9.13694 10.537 9.13009C10.6125 9.09217 10.703 9.05302 10.8197 9.00257L10.8313 8.99753C10.948 8.94704 11.0843 8.8878 11.2227 8.81894C11.7699 8.5467 12.5 8.0461 12.5 7C12.5 6.63454 12.3591 6.13123 11.9607 5.71623C11.5501 5.28858 10.9107 5 10 5C9.08926 5 8.44985 5.28858 8.03931 5.71623C7.64091 6.13123 7.5 6.63454 7.5 7C7.5 7.27614 7.72386 7.5 8 7.5C8.27614 7.5 8.5 7.27614 8.5 7C8.5 6.86546 8.55909 6.61877 8.76069 6.40877ZM10 13C10.4142 13 10.75 12.6642 10.75 12.25C10.75 11.8358 10.4142 11.5 10 11.5C9.58579 11.5 9.25 11.8358 9.25 12.25C9.25 12.6642 9.58579 13 10 13Z" />
-        </svg>
-      </fluent-button>
-    </div>
-    <fluent-dialog id="addListingToVccHelp" hidden modal>
-      <div class="col ps-4 pe-4">
-        <div class="row align-items-center justify-content-between mt-3 mb-4">
-          <div class="row align-items-center">
-            <svg class="me-2" style="fill: var(--neutral-foreground-rest)" width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 4V16C4 17.1046 4.89543 18 6 18H15.5C15.7761 18 16 17.7761 16 17.5C16 17.2239 15.7761 17 15.5 17H6C5.44772 17 5 16.5523 5 16H15C15.5523 16 16 15.5523 16 15V4C16 2.89543 15.1046 2 14 2H6C4.89543 2 4 2.89543 4 4ZM14 3C14.5523 3 15 3.44772 15 4V15H5V4C5 3.44772 5.44772 3 6 3H14ZM8.76069 6.40877C8.95015 6.21142 9.31074 6 10 6C10.6893 6 11.0499 6.21142 11.2393 6.40877C11.4409 6.61877 11.5 6.86546 11.5 7C11.5 7.4539 11.2301 7.69835 10.7773 7.92363C10.6657 7.97916 10.552 8.02883 10.4343 8.0797L10.4116 8.08953C10.3056 8.13534 10.1902 8.18521 10.088 8.23655C9.98257 8.28953 9.85193 8.36283 9.7433 8.46505C9.62799 8.57355 9.5 8.75189 9.5 9V9.99999C9.5 10.2761 9.72386 10.5 10 10.5C10.2761 10.5 10.5 10.2753 10.5 9.99918V9.1493C10.5111 9.14333 10.5234 9.13694 10.537 9.13009C10.6125 9.09217 10.703 9.05302 10.8197 9.00257L10.8313 8.99753C10.948 8.94704 11.0843 8.8878 11.2227 8.81894C11.7699 8.5467 12.5 8.0461 12.5 7C12.5 6.63454 12.3591 6.13123 11.9607 5.71623C11.5501 5.28858 10.9107 5 10 5C9.08926 5 8.44985 5.28858 8.03931 5.71623C7.64091 6.13123 7.5 6.63454 7.5 7C7.5 7.27614 7.72386 7.5 8 7.5C8.27614 7.5 8.5 7.27614 8.5 7C8.5 6.86546 8.55909 6.61877 8.76069 6.40877ZM10 13C10.4142 13 10.75 12.6642 10.75 12.25C10.75 11.8358 10.4142 11.5 10 11.5C9.58579 11.5 9.25 11.8358 9.25 12.25C9.25 12.6642 9.58579 13 10 13Z" />
-            </svg>
-            <h3 class="m-0">このパッケージリストをVCCに追加する方法</h3>
+    </header>
+
+    <main id="mainContent">
+      <section class="hero" aria-labelledby="heroTitle">
+        <div class="hero__copy reveal" style="--reveal-index: 0">
+          <p class="product-name">ANI Cursor Tool</p>
+          <h1 id="heroTitle">Windowsカーソルを、<span>アバターの手元へ。</span></h1>
+          <p class="hero__lede">ANIフォルダーから、32×32の形と動きを保った立体カーソルとModular Avatar用Prefabを生成します。</p>
+          <div class="hero__actions">
+            <button class="button button--primary" id="vccAddRepoButton" type="button">VCCに追加</button>
+            <a class="text-link" href="#packages">パッケージを見る <span aria-hidden="true">↓</span></a>
           </div>
-          <fluent-button appearance="stealth" id="addListingToVccHelpClose" aria-label="閉じる" title="閉じる">
-            <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4.08859 4.21569L4.14645 4.14645C4.32001 3.97288 4.58944 3.9536 4.78431 4.08859L4.85355 4.14645L10 9.293L15.1464 4.14645C15.32 3.97288 15.5894 3.9536 15.7843 4.08859L15.8536 4.14645C16.0271 4.32001 16.0464 4.58944 15.9114 4.78431L15.8536 4.85355L10.707 10L15.8536 15.1464C16.0271 15.32 16.0464 15.5894 15.9114 15.7843L15.8536 15.8536C15.68 16.0271 15.4106 16.0464 15.2157 15.9114L15.1464 15.8536L10 10.707L4.85355 15.8536C4.67999 16.0271 4.41056 16.0464 4.21569 15.9114L4.14645 15.8536C3.97288 15.68 3.9536 15.4106 4.08859 15.2157L4.14645 15.1464L9.293 10L4.14645 4.85355C3.97288 4.67999 3.9536 4.41056 4.08859 4.21569L4.14645 4.14645L4.08859 4.21569Z" />
-              </svg>
-          </fluent-button>
+          <ul class="hero__facts" aria-label="対応環境">
+            <li>Unity 2022.3</li>
+            <li>VRChatアバター</li>
+            <li>Modular Avatar</li>
+          </ul>
         </div>
-        <p class="mb-1">
-          このパッケージリストをVCC（VRChat Creator Companion）に追加する手順です。
-        </p>
-        <ul class="mt-1 ps-5">
-          <li class="mb-2">VCCを開き、「Settings」を選択します</li>
-          <li class="mb-2">「Packages」タブを開きます</li>
-          <li class="mb-2">「Add Repository」をクリックします</li>
-          <li class="mb-2">表示された入力欄に、下のURLを貼り付けます</li>
-          <li class="mb-2">「Add」をクリックします</li>
-          <li class="mb-2">リポジトリ情報を確認し、「I Understand」をクリックします</li>
-          <li class="mb-2">プロジェクトを開き、追加されたパッケージを選択します</li>
-        </ul>
-        <h5 class="m-0 mb-2">パッケージリストURL</h5>
-        <div class="row align-items-center">
-          <fluent-text-field aria-readonly="true" aria-label="パッケージリストURL" id="vccListingInfoUrlField" class="vccUrlField" readonly value="{{ listingInfo.Url }}">
-          </fluent-text-field>
-          <fluent-button class="ms-2" id="vccListingInfoUrlFieldCopy">
-            <svg slot="start" width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 2C6.89543 2 6 2.89543 6 4V14C6 15.1046 6.89543 16 8 16H14C15.1046 16 16 15.1046 16 14V4C16 2.89543 15.1046 2 14 2H8ZM7 4C7 3.44772 7.44772 3 8 3H14C14.5523 3 15 3.44772 15 4V14C15 14.5523 14.5523 15 14 15H8C7.44772 15 7 14.5523 7 14V4ZM4 6.00001C4 5.25973 4.4022 4.61339 5 4.26758V14.5C5 15.8807 6.11929 17 7.5 17H13.7324C13.3866 17.5978 12.7403 18 12 18H7.5C5.567 18 4 16.433 4 14.5V6.00001Z"/>
-            </svg>
-            コピー
-          </fluent-button>
-        </div>
-        <div class="caption1 mt-4">パッケージリストの詳細は<a href="https://vcc.docs.vrchat.com" target="_blank">VCC公式ドキュメント</a>をご覧ください。</div>
-      </div>
-    </fluent-dialog>
-    <div class="searchBlock">
-      <fluent-text-field id="searchInput" aria-label="パッケージを検索" placeholder="パッケージを検索…" type="text" autoFocus></fluent-text-field>
-    </div>
-    <fluent-menu id="rowMoreMenu" hidden>
-      <fluent-menu-item id="rowMoreMenuDownload">
-        <svg slot="start" width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-          <path d="M15.5 16.9997C15.7761 16.9997 16 17.2236 16 17.4997C16 17.7452 15.8231 17.9494 15.5899 17.9917L15.5 17.9997H4.5C4.22386 17.9997 4 17.7759 4 17.4997C4 17.2543 4.17688 17.0501 4.41012 17.0078L4.5 16.9997H15.5ZM10.0001 2.00195C10.2456 2.00195 10.4497 2.17896 10.492 2.41222L10.5 2.5021L10.496 14.296L14.1414 10.6476C14.3148 10.4739 14.5842 10.4544 14.7792 10.5892L14.8485 10.647C15.0222 10.8204 15.0418 11.0898 14.907 11.2848L14.8492 11.3541L10.3574 15.8541C10.285 15.9267 10.1957 15.9724 10.1021 15.9911L9.99608 16.0008C9.83511 16.0008 9.69192 15.9247 9.60051 15.8065L5.14386 11.3547C4.94846 11.1595 4.94823 10.8429 5.14336 10.6475C5.3168 10.4739 5.58621 10.4544 5.78117 10.5892L5.85046 10.647L9.496 14.288L9.5 2.50181C9.50008 2.22567 9.724 2.00195 10.0001 2.00195Z" />
-        </svg>
-        <div>
-          ZIPをダウンロード
-        </div>
-      </fluent-menu-item>
-    </fluent-menu>
-    <fluent-dialog id="packageInfoModal" hidden modal>
-      <div class="col ps-4 pe-4">
-        <div class="row align-items-center justify-content-between mt-3 mb-4">
-          <div class="col">
-            <h3 class="m-0 mb-1" id="packageInfoName">パッケージ名</h3>
-            <div class="row">
-              <div class="caption1" id="packageInfoId">com.package.id</div>
-              <div class="caption1 ms-2" id="packageInfoVersion">v1.0.1</div>
+
+        <div class="workbench reveal" style="--reveal-index: 1" role="group" aria-label="ANIカーソルの変換工程">
+          <div class="workbench__header">
+            <span>形状プレビュー</span>
+            <span class="status"><span class="status__dot" aria-hidden="true"></span>32 px / 4 mm</span>
+          </div>
+          <div class="workbench__stage">
+            <div class="workbench__readout" aria-hidden="true">
+              <span>フレーム 01</span>
+              <span>32 × 32 px</span>
             </div>
-          </div>
-          <fluent-button appearance="stealth" id="packageInfoModalClose" aria-label="閉じる" title="閉じる">
-            <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4.08859 4.21569L4.14645 4.14645C4.32001 3.97288 4.58944 3.9536 4.78431 4.08859L4.85355 4.14645L10 9.293L15.1464 4.14645C15.32 3.97288 15.5894 3.9536 15.7843 4.08859L15.8536 4.14645C16.0271 4.32001 16.0464 4.58944 15.9114 4.78431L15.8536 4.85355L10.707 10L15.8536 15.1464C16.0271 15.32 16.0464 15.5894 15.9114 15.7843L15.8536 15.8536C15.68 16.0271 15.4106 16.0464 15.2157 15.9114L15.1464 15.8536L10 10.707L4.85355 15.8536C4.67999 16.0271 4.41056 16.0464 4.21569 15.9114L4.14645 15.8536C3.97288 15.68 3.9536 15.4106 4.08859 15.2157L4.14645 15.1464L9.293 10L4.14645 4.85355C3.97288 4.67999 3.9536 4.41056 4.08859 4.21569L4.14645 4.14645L4.08859 4.21569Z" />
-              </svg>
-          </fluent-button>
-        </div>
-        <h5 class="m-0">パッケージ情報</h5>
-        <p class="mb-4 mt-1" id="packageInfoDescription">
-          パッケージの説明
-        </p>
-        <h5 class="m-0">作成者</h5>
-        <p class="mb-4 mt-1">
-          <a href="#" target="_blank" id="packageInfoAuthor">
-            作成者名
-          </a>
-        </p>
-        <h5 class="m-0 mb-2">依存パッケージ</h5>
-        <ul class="mt-1 ps-5" id="packageInfoDependencies">
-        </ul>
-        <div class="col">
-          <h5 class="m-0 mb-2">キーワード</h5>
-          <div class="mb-2 mt-1 row" id="packageInfoKeywords">
-          </div>
-        </div>
-        <div class="col">
-          <h5 class="m-0">ライセンス</h5>
-          <a href="#" class="mb-4 mt-1" id="packageInfoLicense">
-            ライセンス
-          </a>
-        </div>
-        <h5 class="m-0 mb-2">パッケージリストURL</h5>
-        <div class="row align-items-center">
-          <fluent-text-field aria-readonly="true" aria-label="パッケージリストURL" id="packageInfoVccUrlField" class="vccUrlField" readonly value="{{ listingInfo.Url }}">
-          </fluent-text-field>
-          <fluent-button class="ms-2" id="packageInfoVccUrlFieldCopy">
-            <svg slot="start" width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 2C6.89543 2 6 2.89543 6 4V14C6 15.1046 6.89543 16 8 16H14C15.1046 16 16 15.1046 16 14V4C16 2.89543 15.1046 2 14 2H8ZM7 4C7 3.44772 7.44772 3 8 3H14C14.5523 3 15 3.44772 15 4V14C15 14.5523 14.5523 15 14 15H8C7.44772 15 7 14.5523 7 14V4ZM4 6.00001C4 5.25973 4.4022 4.61339 5 4.26758V14.5C5 15.8807 6.11929 17 7.5 17H13.7324C13.3866 17.5978 12.7403 18 12 18H7.5C5.567 18 4 16.433 4 14.5V6.00001Z"/>
+            <svg class="cursor-preview" viewBox="0 0 32 32" role="img" aria-label="段差のあるピクセルカーソル">
+              <path class="cursor-preview__shadow" d="M7 4v22l6-6 4 10 5-2-4-10h9z"></path>
+              <path class="cursor-preview__face" d="M5 2v22l6-6 4 10 5-2-4-10h9z"></path>
+              <path class="cursor-preview__edge" d="M5 2v22l6-6 4 10 5-2-4-10h9z"></path>
             </svg>
-            コピー
-          </fluent-button>
-          <fluent-tooltip id="packageInfoListingTooltip" anchor="packageInfoListingHelp">
-            VCCにパッケージリストを追加する方法
-          </fluent-tooltip>
-          <fluent-button id="packageInfoListingHelp" class="ms-2" aria-label="VCCへの追加方法を表示">
-            <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 4V16C4 17.1046 4.89543 18 6 18H15.5C15.7761 18 16 17.7761 16 17.5C16 17.2239 15.7761 17 15.5 17H6C5.44772 17 5 16.5523 5 16H15C15.5523 16 16 15.5523 16 15V4C16 2.89543 15.1046 2 14 2H6C4.89543 2 4 2.89543 4 4ZM14 3C14.5523 3 15 3.44772 15 4V15H5V4C5 3.44772 5.44772 3 6 3H14ZM8.76069 6.40877C8.95015 6.21142 9.31074 6 10 6C10.6893 6 11.0499 6.21142 11.2393 6.40877C11.4409 6.61877 11.5 6.86546 11.5 7C11.5 7.4539 11.2301 7.69835 10.7773 7.92363C10.6657 7.97916 10.552 8.02883 10.4343 8.0797L10.4116 8.08953C10.3056 8.13534 10.1902 8.18521 10.088 8.23655C9.98257 8.28953 9.85193 8.36283 9.7433 8.46505C9.62799 8.57355 9.5 8.75189 9.5 9V9.99999C9.5 10.2761 9.72386 10.5 10 10.5C10.2761 10.5 10.5 10.2753 10.5 9.99918V9.1493C10.5111 9.14333 10.5234 9.13694 10.537 9.13009C10.6125 9.09217 10.703 9.05302 10.8197 9.00257L10.8313 8.99753C10.948 8.94704 11.0843 8.8878 11.2227 8.81894C11.7699 8.5467 12.5 8.0461 12.5 7C12.5 6.63454 12.3591 6.13123 11.9607 5.71623C11.5501 5.28858 10.9107 5 10 5C9.08926 5 8.44985 5.28858 8.03931 5.71623C7.64091 6.13123 7.5 6.63454 7.5 7C7.5 7.27614 7.72386 7.5 8 7.5C8.27614 7.5 8.5 7.27614 8.5 7C8.5 6.86546 8.55909 6.61877 8.76069 6.40877ZM10 13C10.4142 13 10.75 12.6642 10.75 12.25C10.75 11.8358 10.4142 11.5 10 11.5C9.58579 11.5 9.25 11.8358 9.25 12.25C9.25 12.6642 9.58579 13 10 13Z" />
-            </svg>
-          </fluent-button>
+          </div>
+          <ol class="pipeline" aria-label="生成工程">
+            <li><span>01</span><strong>ANI</strong><small>シーケンス + 速度</small></li>
+            <li><span>02</span><strong>トレース</strong><small>32 px / Point</small></li>
+            <li><span>03</span><strong>メッシュ</strong><small>FBX / 4 mm</small></li>
+            <li><span>04</span><strong>MA</strong><small>Prefab + メニュー</small></li>
+          </ol>
         </div>
-        <div class="caption1 mt-4">パッケージリストの詳細は<a href="https://vcc.docs.vrchat.com" target="_blank">VCC公式ドキュメント</a>をご覧ください。</div>
-      </div>
-    </fluent-dialog>
-    <fluent-card class="packages">
-      <fluent-data-grid id="packageGrid" role="grid" grid-template-columns="1fr 100px 220px">
-        <fluent-data-grid-row row-type="header">
-          <fluent-data-grid-cell cell-type="columnheader" grid-column="1">
-            パッケージ名
-          </fluent-data-grid-cell>
-          <fluent-data-grid-cell cell-type="columnheader" grid-column="2">
-            種類
-          </fluent-data-grid-cell>
-          <fluent-data-grid-cell cell-type="columnheader" grid-column="3">
-          </fluent-data-grid-cell>
-        </fluent-data-grid-row>
-        {{~ for package in packages ~}}
-          <fluent-data-grid-row data-package-name="{{ package.DisplayName }}" data-package-id="{{ package.Name }}">
-            <fluent-data-grid-cell grid-column="1">
-              <div class="col">
-                <div class="packageName">{{ package.DisplayName }}</div>
-                <div class="caption1 packageDescription">Windowsのアニメーションカーソル（.ani）から、VRChat / Modular Avatar対応の立体カーソルPrefabを生成するツールです。</div>
-                <div class="caption2">{{ package.Name }}</div>
-              </div>
-            </fluent-data-grid-cell>
-            <fluent-data-grid-cell grid-column="2" class="row align-items-center" data-package-type="{{ package.Type }}">
-              {{ package.Type }}
-            </fluent-data-grid-cell>
-            <fluent-data-grid-cell grid-column="3" class="row align-items-center justify-content-end">
-              <fluent-button appearance="accent" class="rowAddToVccButton" data-package-id="{{ package.Name }}">VCCに追加</fluent-button>
-              <fluent-button title="パッケージ情報を表示" aria-label="パッケージ情報を表示" class="rowPackageInfoButton ms-2" data-package-id="{{ package.Name }}">
-                <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10.4921 8.91012C10.4497 8.67687 10.2456 8.49999 10.0001 8.49999C9.72397 8.49999 9.50011 8.72385 9.50011 8.99999V13.5021L9.50817 13.592C9.55051 13.8253 9.75465 14.0021 10.0001 14.0021C10.2763 14.0021 10.5001 13.7783 10.5001 13.5021V8.99999L10.4921 8.91012ZM10.7988 6.74999C10.7988 6.33578 10.463 5.99999 10.0488 5.99999C9.63461 5.99999 9.29883 6.33578 9.29883 6.74999C9.29883 7.16421 9.63461 7.49999 10.0488 7.49999C10.463 7.49999 10.7988 7.16421 10.7988 6.74999ZM18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10ZM3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10Z"/>
-                  </svg>
-              </fluent-button>
-              <fluent-button class="rowMenuButton ms-2" appearance="stealth" title="その他の操作" aria-label="その他の操作" data-package-url="{{ package.ZipUrl }}">
-                <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6.25 10C6.25 10.6904 5.69036 11.25 5 11.25C4.30964 11.25 3.75 10.6904 3.75 10C3.75 9.30964 4.30964 8.75 5 8.75C5.69036 8.75 6.25 9.30964 6.25 10ZM11.25 10C11.25 10.6904 10.6904 11.25 10 11.25C9.30964 11.25 8.75 10.6904 8.75 10C8.75 9.30964 9.30964 8.75 10 8.75C10.6904 8.75 11.25 9.30964 11.25 10ZM15 11.25C15.6904 11.25 16.25 10.6904 16.25 10C16.25 9.30964 15.6904 8.75 15 8.75C14.3096 8.75 13.75 9.30964 13.75 10C13.75 10.6904 14.3096 11.25 15 11.25Z"/>
-                </svg>
-              </fluent-button>
-            </fluent-data-grid-cell>
-          </fluent-data-grid-row>
-        {{~ end ~}}
-      </fluent-data-grid>
-    </fluent-card>
-    {{~ if listingInfo.InfoLink.Url ~}}
-      <div class="caption1" id="publishedByText">
-        <a href="{{listingInfo.InfoLink.Url}}" target="_blank">{{ if listingInfo.InfoLink.Text; listingInfo.InfoLink.Text; else; "詳しく見る"; end; }}</a>
-      </div>
-    {{~ end; ~}}
+      </section>
+
+      <section class="package-band" id="packages" aria-labelledby="packagesTitle">
+        <div class="package-band__inner">
+          <div class="section-head">
+            <div>
+              <h2 id="packagesTitle">配布パッケージ</h2>
+              <p>このリストからVCCへ追加できます。</p>
+            </div>
+            <label class="search-control" for="searchInput">
+              <span>検索</span>
+              <input id="searchInput" type="search" placeholder="名前またはIDで検索" autocomplete="off">
+            </label>
+          </div>
+
+          <div class="package-grid" id="packageGrid">
+            {{~ for package in packages ~}}
+              <article class="package-card" data-package-row data-package-name="{{ package.DisplayName }}" data-package-id="{{ package.Name }}">
+                <div class="package-card__identity">
+                  <div class="package-card__meta">
+                    <span class="package-card__version">v{{ package.Version }}</span>
+                    <span class="package-card__type" data-package-type="{{ package.Type }}">{{ package.Type }}</span>
+                  </div>
+                  <h3>{{ package.DisplayName }}</h3>
+                  <p class="packageDescription">Windowsのアニメーションカーソル（.ani）から、VRChat / Modular Avatar対応の立体カーソルPrefabを生成するツールです。</p>
+                  <code>{{ package.Name }}</code>
+                </div>
+
+                <dl class="spec-list">
+                  <div><dt>入力</dt><dd>.aniカーソルセット</dd></div>
+                  <div><dt>出力</dt><dd>PNG · FBX · マテリアル · Prefab</dd></div>
+                  <div><dt>アニメーション</dt><dd>ANIシーケンス + 速度</dd></div>
+                  <div><dt>装着</dt><dd>MA Bone Proxy</dd></div>
+                </dl>
+
+                <div class="package-card__actions">
+                  <button class="button button--light rowAddToVccButton" type="button" data-package-id="{{ package.Name }}">VCCに追加</button>
+                  <button class="button button--ghost rowPackageInfoButton" type="button" data-package-id="{{ package.Name }}">詳細</button>
+                  <a class="download-link" href="{{ package.ZipUrl }}" target="_blank" rel="noopener noreferrer">ZIP <span aria-hidden="true">↗</span></a>
+                </div>
+              </article>
+            {{~ end ~}}
+          </div>
+          <p class="empty-state" id="emptyState" hidden>一致するパッケージはありません。名前またはIDを短くして検索してください。</p>
+        </div>
+      </section>
+
+      <section class="repository-panel" aria-labelledby="repositoryTitle">
+        <div class="repository-panel__copy">
+          <h2 id="repositoryTitle">VPMリストを追加</h2>
+          <p>VCCが開かない場合は、下のURLをコピーして <span class="inline-code">Settings → Packages → Add Repository</span> に貼り付けます。</p>
+        </div>
+        <div class="repository-panel__controls">
+          <label class="url-label" for="vccUrlField">パッケージリストURL</label>
+          <div class="url-control">
+            <input id="vccUrlField" type="text" readonly value="{{ listingInfo.Url }}">
+            <button class="button button--secondary copy-button" id="vccUrlFieldCopy" type="button" data-copy-target="vccUrlField"><span class="copy-button__label">コピー</span></button>
+          </div>
+          <button class="help-link" id="urlBarHelp" type="button">追加手順を確認 <span aria-hidden="true">→</span></button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p><span class="footer__brand">ANI/CURSOR</span> · MITライセンス · VPMリスト作成者: <a href="{{ listingInfo.Author.Url }}" target="_blank" rel="noopener noreferrer">{{ listingInfo.Author.Name }}</a></p>
+      <a href="https://github.com/ChanyaVRC/AniCursor" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+    </footer>
   </div>
+
+  <dialog class="dialog" id="addListingToVccHelp" aria-labelledby="helpDialogTitle">
+    <div class="dialog__header">
+      <div>
+        <p class="dialog__meta">VCC / リポジトリ</p>
+        <h2 id="helpDialogTitle">VCCに追加する方法</h2>
+      </div>
+      <button class="icon-button" id="addListingToVccHelpClose" type="button" aria-label="閉じる">×</button>
+    </div>
+    <ol class="steps">
+      <li><span>01</span><p>VCCを開き、<strong>Settings</strong> を選択します。</p></li>
+      <li><span>02</span><p><strong>Packages</strong> タブで <strong>Add Repository</strong> を選択します。</p></li>
+      <li><span>03</span><p>下のURLを貼り付け、<strong>Add</strong> を選択します。</p></li>
+      <li><span>04</span><p>内容を確認し、<strong>I Understand</strong> を選択します。</p></li>
+    </ol>
+    <label class="url-label" for="vccListingInfoUrlField">パッケージリストURL</label>
+    <div class="url-control">
+      <input id="vccListingInfoUrlField" type="text" readonly value="{{ listingInfo.Url }}">
+      <button class="button button--secondary copy-button" id="vccListingInfoUrlFieldCopy" type="button" data-copy-target="vccListingInfoUrlField"><span class="copy-button__label">コピー</span></button>
+    </div>
+    <p class="dialog__footnote">詳しくは<a href="https://vcc.docs.vrchat.com" target="_blank" rel="noopener noreferrer">VCC公式ドキュメント</a>を確認してください。</p>
+  </dialog>
+
+  <dialog class="dialog dialog--package" id="packageInfoModal" aria-labelledby="packageInfoName">
+    <div class="dialog__header">
+      <div>
+        <p class="dialog__meta" id="packageInfoId">com.package.id</p>
+        <h2 id="packageInfoName">パッケージ名</h2>
+        <p class="dialog__version" id="packageInfoVersion">v0.0.0</p>
+      </div>
+      <button class="icon-button" id="packageInfoModalClose" type="button" aria-label="閉じる">×</button>
+    </div>
+    <p class="dialog__description" id="packageInfoDescription">パッケージの説明</p>
+    <dl class="package-info-list">
+      <div>
+        <dt>作成者</dt>
+        <dd><a href="#" target="_blank" rel="noopener noreferrer" id="packageInfoAuthor">作成者名</a></dd>
+      </div>
+      <div id="packageInfoLicenseGroup">
+        <dt>ライセンス</dt>
+        <dd><a href="#" target="_blank" rel="noopener noreferrer" id="packageInfoLicense">ライセンス</a></dd>
+      </div>
+    </dl>
+    <section class="dialog__section" id="packageInfoDependenciesGroup">
+      <h3>依存パッケージ</h3>
+      <ul class="dependency-list" id="packageInfoDependencies"></ul>
+    </section>
+    <section class="dialog__section" id="packageInfoKeywordsGroup">
+      <h3>キーワード</h3>
+      <div class="keyword-list" id="packageInfoKeywords"></div>
+    </section>
+    <label class="url-label" for="packageInfoVccUrlField">パッケージリストURL</label>
+    <div class="url-control">
+      <input id="packageInfoVccUrlField" type="text" readonly value="{{ listingInfo.Url }}">
+      <button class="button button--secondary copy-button" id="packageInfoVccUrlFieldCopy" type="button" data-copy-target="packageInfoVccUrlField"><span class="copy-button__label">コピー</span></button>
+    </div>
+    <div class="dialog__actions">
+      <button class="button button--primary" type="button" data-add-vcc>VCCに追加</button>
+      <button class="help-link" id="packageInfoListingHelp" type="button">追加手順を確認 <span aria-hidden="true">→</span></button>
+    </div>
+  </dialog>
+
+  <div class="visually-hidden" id="copyStatus" aria-live="polite"></div>
+  <div class="visually-hidden" id="searchStatus" aria-live="polite"></div>
   <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -8,7 +8,6 @@
   },
   "url": "https://ChanyaVRC.github.io/AniCursor/index.json",
   "description": "WindowsのANIカーソルから、VRChat / Modular Avatar対応の立体アニメーションカーソルを生成します。",
-  "bannerUrl": "banner.png",
   "githubRepos": [
     "ChanyaVRC/AniCursor"
   ]

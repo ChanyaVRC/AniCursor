@@ -1,0 +1,16 @@
+{
+  "scanned_at": "2026-08-10",
+  "scope": "Website",
+  "framework": "vanilla HTML with Scriban templates",
+  "font_stack": "system UI only",
+  "palette": "Fluent UI inherited tokens",
+  "motion": "no motion library",
+  "spacing": "ad-hoc 4px and 8px utility classes",
+  "preserve": [
+    "Scriban listing bindings",
+    "VCC deep links",
+    "package search",
+    "copy controls",
+    "help and package information dialogs"
+  ]
+}
