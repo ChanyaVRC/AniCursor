@@ -2,12 +2,24 @@ import { baseLayerLuminance, StandardLuminance } from 'https://unpkg.com/@fluent
 
 const LISTING_URL = "{{ listingInfo.Url }}";
 
+const PACKAGE_DESCRIPTIONS_JA = {
+  "com.chanya.ani-cursor": "Windowsのアニメーションカーソル（.ani）から、VRChat / Modular Avatar対応の立体カーソルPrefabを生成するツールです。",
+};
+
+const PACKAGE_TYPES_JA = {
+  Any: "共通",
+  Avatar: "アバター",
+  Tool: "ツール",
+  World: "ワールド",
+  tool: "ツール",
+};
+
 const PACKAGES = {
 {{~ for package in packages ~}}
   "{{ package.Name }}": {
     name: "{{ package.Name }}",
     displayName: "{{ if package.DisplayName; package.DisplayName; end; }}",
-    description: "{{ if package.Description; package.Description; end; }}",
+    description: PACKAGE_DESCRIPTIONS_JA["{{ package.Name }}"] ?? "{{ if package.Description; package.Description; end; }}",
     version: "{{ package.Version }}",
     author: {
       name: "{{ if package.Author.Name; package.Author.Name; end; }}",
@@ -46,6 +58,18 @@ const setTheme = () => {
   });
 
   const packageGrid = document.getElementById('packageGrid');
+
+  packageGrid.querySelectorAll('fluent-data-grid-row[data-package-id]').forEach(row => {
+    const description = PACKAGES?.[row.dataset?.packageId]?.description;
+    const descriptionElement = row.querySelector('.packageDescription');
+    if (description && descriptionElement) {
+      descriptionElement.textContent = description;
+    }
+  });
+
+  packageGrid.querySelectorAll('[data-package-type]').forEach(cell => {
+    cell.textContent = PACKAGE_TYPES_JA[cell.dataset.packageType] ?? cell.dataset.packageType;
+  });
 
   const searchInput = document.getElementById('searchInput');
   searchInput.addEventListener('input', ({ target: { value = '' }}) => {
@@ -164,7 +188,7 @@ const setTheme = () => {
       const packageId = e.target.dataset?.packageId;
       const packageInfo = PACKAGES?.[packageId];
       if (!packageInfo) {
-        console.error(`Did not find package ${packageId}. Packages available:`, PACKAGES);
+        console.error(`パッケージ ${packageId} が見つかりません。利用可能なパッケージ:`, PACKAGES);
         return;
       }
 
@@ -192,7 +216,7 @@ const setTheme = () => {
         packageInfoLicense.parentElement.classList.add('hidden');
       } else {
         packageInfoLicense.parentElement.classList.remove('hidden');
-        packageInfoLicense.textContent = packageInfo.license ?? 'See License';
+        packageInfoLicense.textContent = packageInfo.license ?? 'ライセンスを確認';
         packageInfoLicense.href = packageInfo.licensesUrl ?? '#';
       }
 

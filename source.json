@@ -1,0 +1,15 @@
+{
+  "name": "ANI Cursor Tool パッケージリスト",
+  "id": "com.chanya.ani-cursor.listing",
+  "author": {
+    "name": "Chanya",
+    "url": "https://github.com/ChanyaVRC",
+    "email": "63221603+ChanyaVRC@users.noreply.github.com"
+  },
+  "url": "https://ChanyaVRC.github.io/AniCursor/index.json",
+  "description": "WindowsのANIカーソルから、VRChat / Modular Avatar対応の立体アニメーションカーソルを生成します。",
+  "bannerUrl": "banner.png",
+  "githubRepos": [
+    "ChanyaVRC/AniCursor"
+  ]
+}
