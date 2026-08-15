@@ -4,12 +4,12 @@ Windows の `.ani` カーソル一式から、VRChat / Modular Avatar 対応の�
 
 ## VCC へ追加
 
-[Add ANI Cursor Tool to VCC](vcc://vpm/addRepo?url=https%3A%2F%2Fchanyavrc.github.io%2FAniCursor%2Findex.json)
+[Add ANI Cursor Tool to VCC](vcc://vpm/addRepo?url=https%3A%2F%2Fani-cursor.buildsoft.jp%2Findex.json)
 
 Listing URL:
 
 ```text
-https://chanyavrc.github.io/AniCursor/index.json
+https://ani-cursor.buildsoft.jp/index.json
 ```
 
 VCC の `Settings > Packages > Add Repository` に上記URLを貼り付けても追加できます。

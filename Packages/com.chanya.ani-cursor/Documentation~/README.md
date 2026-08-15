@@ -4,7 +4,7 @@ Windows の `.ani` カーソル一式から、VRChat アバターで切り替え
 
 ## インストール
 
-VCC または ALCOM に `https://chanyavrc.github.io/AniCursor/index.json` を登録し、`ANI Cursor Tool` をプロジェクトへ追加します。依存する VRChat SDK と Modular Avatar は VPM により解決されます。
+VCC または ALCOM に `https://ani-cursor.buildsoft.jp/index.json` を登録し、`ANI Cursor Tool` をプロジェクトへ追加します。依存する VRChat SDK と Modular Avatar は VPM により解決されます。
 
 配布用ZIPとVPM listingは、このリポジトリのGitHub Actionsから生成されます。
 
