@@ -5,6 +5,14 @@ env:
   pathToCi: ci
   
 on: 
+  push:
+    branches:
+      - main
+    paths:
+      - source.json
+      - Packages/**
+      - Website/**
+      - .github/workflows/build-listing.yml
   workflow_dispatch:
   workflow_run:
     workflows: [Build Release]
