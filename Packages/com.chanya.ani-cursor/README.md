@@ -9,10 +9,10 @@ Modular Avatar は必須です。生成物は現行形式のみを対象とし�
 VCC または ALCOM に次のVPM listingを登録し、`ANI Cursor Tool` をプロジェクトへ追加してください。
 
 ```text
-https://chanyavrc.github.io/AniCursor/index.json
+https://ani-cursor.buildsoft.jp/index.json
 ```
 
-[VCCへ追加](vcc://vpm/addRepo?url=https%3A%2F%2Fchanyavrc.github.io%2FAniCursor%2Findex.json)
+[VCCへ追加](vcc://vpm/addRepo?url=https%3A%2F%2Fani-cursor.buildsoft.jp%2Findex.json)
 
 ローカル開発では、このリポジトリの `Packages` フォルダーをVCCのUser Packagesへ登録できます。
 
